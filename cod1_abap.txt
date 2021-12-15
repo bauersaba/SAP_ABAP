@@ -1,0 +1,122 @@
+*&---------------------------------------------------------------------*
+*& Report Z_REGISTRO_DE_VOOS
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_registro_de_voos.
+
+CONSTANTS: posicao_preco_cabecalho TYPE i VALUE 36,
+
+           posicao_n_voo_corpo     TYPE i VALUE 12,
+           posicao_data_corpo      TYPE i VALUE 25.
+
+
+DATA: cia_aerea(2) TYPE c,
+      numero_voo   TYPE i,
+      data         TYPE d,
+      preco        TYPE p DECIMALS 2.
+
+WRITE: 'Cia Aerea',
+        'Numero do Voo',
+        'Data',
+        AT posicao_preco_cabecalho 'Preço'.
+
+SKIP .
+
+cia_aerea = 'AA'.
+numero_voo = 17.
+data = '20171219'.
+preco = '422.94'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'AA'.
+numero_voo = 17.
+data = '20180309'.
+preco = '422.94'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'AA'.
+numero_voo = 17.
+data = '20180528'.
+preco = '422.94'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'AA'.
+numero_voo = 17.
+data = '20180816'.
+preco = '422.94'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'LH'.
+numero_voo = 17.
+data = '20181104'.
+preco = '422.94'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'QF'.
+numero_voo = 17.
+data = '20190123'.
+preco = '422.94'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'AZ'.
+numero_voo = 555.
+data = '20171219'.
+preco = '185.00'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'AZ'.
+numero_voo = 555.
+data = '20180309'.
+preco = '185.00'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'AZ'.
+numero_voo = 555.
+data = '20180528'.
+preco = '185.00'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+
+cia_aerea = 'AZ'.
+numero_voo = 555.
+data = '20180816'.
+preco = '185.00'.
+PERFORM escreve_nova_linha_no_corpo USING cia_aerea numero_voo data preco.
+skip.
+write 'Relatório gerado em : '.
+write sy-datum.
+
+FORM escreve_nova_linha_no_corpo USING cia_aerea numero_cia_aerea data preco.
+
+  WRITE:  / cia_aerea,
+          AT posicao_n_voo_corpo numero_cia_aerea CENTERED,
+          AT posicao_data_corpo data DD/MM/YYYY,
+          preco LEFT-JUSTIFIED.
+
+ENDFORM.
+
+
+
+
+*WRITE: 'Cia Aerea',
+*       'Num do Voo',
+*       'Data',
+*       AT 33'Preço'.
+*
+*SKIP.
+**WRITE: 'AA',
+**       AT 11'17',
+**       AT 22'19.12.2017',
+**      '422,94'.
+*
+*PERFORM escreve_nova_linha USING 'AA' '17' '19.12.2017' '422,94'.
+*PERFORM escreve_nova_linha USING 'AA' '17' '09.03.2018' '422,94'.
+*
+*FORM escreve_nova_linha USING cia_area num_de_voo data preco.
+*
+*  WRITE: / cia_area,
+*       AT 11 num_de_voo,
+*       AT 22 data,
+*       preco.
+*
+*ENDFORM .
