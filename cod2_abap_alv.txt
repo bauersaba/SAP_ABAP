@@ -1,0 +1,164 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      Z_CONTROLE_VOOS
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM z_controle_voos.
+
+INCLUDE z_controle_voos_declara.
+INCLUDE z_controle_voos_selectionopt.
+INCLUDE z_controle_voos_pbo .
+INCLUDE z_controle_voos_pai .
+
+*----------------------------------------------------------------------*
+
+*&---------------------------------------------------------------------*
+*& Include          Z_CONTROLE_VOOS_DECLARA
+*&---------------------------------------------------------------------*
+
+TABLES zspfli_atrasos .
+DATA spfli TYPE spfli .
+
+DATA: custom_container TYPE REF TO cl_gui_custom_container,
+      alv              TYPE REF TO cl_gui_alv_grid,
+      fieldcat         TYPE lvc_t_fcat.
+
+DATA relatorio_atrasos TYPE STANDARD TABLE OF zspfli_atrasos_estrutura .
+
+*----------------------------------------------------------------------*
+
+*&---------------------------------------------------------------------*
+*& Include          Z_CONTROLE_VOOS_PAI
+*&---------------------------------------------------------------------*
+
+MODULE pai INPUT.
+
+  CASE sy-ucomm.
+    WHEN 'VOLTAR' OR 'CANCELAR' OR 'SAIR' .
+      LEAVE PROGRAM .
+
+    WHEN 'EXEC' .
+      IF zspfli_atrasos-dia_voo IS INITIAL.
+        SELECT carrid,connid,countryfr,
+               cityfrom, airpfrom, countryto,
+               cityto, airpto, fltime,
+               deptime, arrtime FROM spfli
+         INTO TABLE @relatorio_atrasos
+         WHERE carrid IN @s_carrid
+         AND connid IN @s_connid
+         AND cityfrom IN @s_cityfr
+         AND cityto IN @s_cityto .
+      ELSE .
+        SELECT spfli~carrid, spfli~connid, spfli~countryfr,
+            spfli~cityfrom, spfli~airpfrom, spfli~countryto,
+            spfli~cityto, spfli~airpto, spfli~fltime,
+            spfli~deptime, spfli~arrtime, zspfli_atrasos~dia_voo, zspfli_atrasos~atraso
+       FROM spfli INNER JOIN zspfli_atrasos
+         ON spfli~carrid = zspfli_atrasos~carrid
+         AND spfli~connid = zspfli_atrasos~connid
+       INTO TABLE @relatorio_atrasos
+       WHERE spfli~carrid   IN @s_carrid
+         AND spfli~connid   IN @s_connid
+         AND spfli~cityfrom IN @s_cityfr
+         AND spfli~cityto   IN @s_cityto
+         AND zspfli_atrasos~dia_voo = @zspfli_atrasos-dia_voo .
+
+        IF sy-subrc = 0 .
+          DATA wa_relatorio_atrasos LIKE LINE OF relatorio_atrasos .
+          LOOP AT relatorio_atrasos INTO wa_relatorio_atrasos .
+            IF wa_relatorio_atrasos-atraso IS NOT INITIAL.
+              wa_relatorio_atrasos-arrtime = wa_relatorio_atrasos-arrtime + wa_relatorio_atrasos-atraso .
+              MODIFY relatorio_atrasos FROM wa_relatorio_atrasos.
+            ENDIF.
+
+
+          ENDLOOP.
+        ENDIF.
+      ENDIF.
+*      SELECT * FROM spfli
+*      INTO TABLE it_spfli
+*      WHERE carrid IN s_carrid
+*      AND connid IN s_connid
+*      AND cityfrom IN s_cityfr
+*      AND cityto IN s_cityto .
+
+
+
+    WHEN 'BTN_ATRASO' .
+      DATA: wa_spfli         LIKE LINE OF relatorio_atrasos,
+            wa_spfli_atrasos TYPE zspfli_atrasos.
+
+      LOOP AT relatorio_atrasos INTO wa_spfli .
+
+        wa_spfli_atrasos-carrid = wa_spfli-carrid .
+        wa_spfli_atrasos-connid = wa_spfli-connid .
+        wa_spfli_atrasos-dia_voo = zspfli_atrasos-dia_voo .
+        wa_spfli_atrasos-atraso = zspfli_atrasos-atraso .
+
+        INSERT zspfli_atrasos FROM wa_spfli_atrasos .
+
+        IF sy-subrc = 0 .
+          MESSAGE 'Atraso registrado com sucesso!' TYPE 'S' .
+        ELSE .
+          MESSAGE 'Ocorreu um erro no registro. Tente novamente' TYPE 'S' DISPLAY LIKE 'E' .
+        ENDIF .
+
+      ENDLOOP .
+  ENDCASE.
+
+ENDMODULE.
+
+*----------------------------------------------------------------------*
+
+*&---------------------------------------------------------------------*
+*& Include          Z_CONTROLE_VOOS_PBO
+*&---------------------------------------------------------------------*
+
+MODULE pbo OUTPUT.
+
+  DATA coluna LIKE LINE OF fieldcat .
+
+  SET PF-STATUS '1000'.
+
+  IF custom_container IS NOT BOUND .
+    CREATE OBJECT custom_container
+      EXPORTING
+        container_name = 'CC_ALV'.
+    CREATE OBJECT alv
+      EXPORTING
+        i_parent = custom_container.
+
+    CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+      EXPORTING
+        i_structure_name = 'ZSPFLI_ATRASOS_ESTRUTURA'
+      CHANGING
+        ct_fieldcat      = fieldcat.
+
+    CALL METHOD alv->set_table_for_first_display
+      CHANGING
+        it_outtab       = relatorio_atrasos
+        it_fieldcatalog = fieldcat.
+
+  ENDIF .
+  CALL METHOD alv->refresh_table_display( ) .
+
+ENDMODULE.
+
+*----------------------------------------------------------------------*
+
+*&---------------------------------------------------------------------*
+*& Include          Z_CONTROLE_VOOS_SELECTIONOPT
+*&---------------------------------------------------------------------*
+
+SELECTION-SCREEN: BEGIN OF SCREEN 9999 AS SUBSCREEN.
+SELECTION-SCREEN: BEGIN OF BLOCK bloco1 WITH FRAME TITLE TEXT-001 .
+
+SELECT-OPTIONS s_carrid FOR spfli-carrid NO INTERVALS .
+SELECT-OPTIONS s_connid FOR spfli-connid NO INTERVALS .
+SELECT-OPTIONS s_cityfr FOR spfli-cityfrom NO INTERVALS .
+SELECT-OPTIONS s_cityto FOR spfli-cityto NO INTERVALS .
+
+SELECTION-SCREEN: END OF BLOCK bloco1 .
+SELECTION-SCREEN: END OF SCREEN 9999.
+
+
